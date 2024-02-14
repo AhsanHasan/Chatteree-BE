@@ -9,7 +9,6 @@ var userSchema = new mongoose.Schema({
         type: String,
         unique: true
     },
-    emailVerificationCode: String,
     isActive: {
         type: Boolean,
         default: false

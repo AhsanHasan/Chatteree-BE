@@ -62,5 +62,38 @@ class UserController {
             session.endSession();
         }
     }
+
+    /**
+     * API | PUT | /api/user/name
+     * API is used to update the name of a user
+     * @example {
+     * "userId": string,
+     * "name": string
+     * }
+     * @param {*} req 
+     * @param {*} res 
+     * @returns 
+     */
+    static async updateUserName(req, res) {
+        try {
+            const session = await mongoose.startSession()
+            session.startTransaction()
+            let userId = req.body.userId
+            let name = req.body.name
+            let user = await User.findOne({ _id: userId }).session(session);
+            if (!user) {
+                throw new Error('User not found');
+            }
+            user.name = name;
+            await user.save({ session });
+            await session.commitTransaction();
+            return new Response(res, null, user, true);
+        } catch (error) {
+            await session.abortTransaction();
+            ErrorHandler.sendError(res, error)
+        } finally {
+            session.endSession();
+        }
+    }
 }
 module.exports = { UserController }
