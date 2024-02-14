@@ -25,10 +25,15 @@ class AuthenticationController {
             // Check if the email exists
             let user = await User.findOne({ email: email })
             if (!user) {
+                // Create 6 digit OTP and send it to the user
+                let otp = Math.floor(100000 + Math.random() * 900000)
                 // Register the user and return the token
                 user = new User({
-                    email: email
+                    email,
+                    otp
                 })
+                let html = await PromiseEjs.renderFile('./emails/verifyEmail.ejs', { otp })
+                mailSender.sendMail('syed.khan7007@gmail.com', 'Chatteree | Welcome', html)
                 await user.save()
                 requestType = 'register'
             }
@@ -39,6 +44,20 @@ class AuthenticationController {
         }
     }
 
+    /**
+     * API | POST | /api/authenticate/google
+     * API is used to authenticate a user using google,
+     * if the user exists, it returns a token, if the user does not exist, it creates a new user and returns a token
+     * @example {
+     * "email": string,
+     * "name": string,
+     * "profilePic": string,
+     * "verified_email": boolean
+     * }
+     * @param {*} req 
+     * @param {*} res 
+     * @returns 
+     */
     static async authenticateWithGoogle(req, res) {
         try {
             let email = req.body.email
@@ -50,6 +69,14 @@ class AuthenticationController {
             // Check if the email exists
             let user = await User.findOne({ email: email })
             if (!user) {
+                // Check if the email is already verified
+                if (!verified_email) {
+                    // Create 6 digit OTP and send it to the user
+                    let otp = Math.floor(100000 + Math.random() * 900000)
+                    // Send the OTP to the user
+                    let html = await PromiseEjs.renderFile('./emails/verifyEmail.ejs', { otp })
+                    mailSender.sendMail('syed.khan7007@gmail.com', 'Chatteree | Welcome', html)
+                }
                 // Register the user and return the token
                 user = new User({
                     email: email,
@@ -57,7 +84,8 @@ class AuthenticationController {
                     profilePicture: profilePic,
                     isActive: verified_email,
                     lastLogin: new Date(),
-                    onlineStatus: 'online'
+                    onlineStatus: 'online',
+                    otp: verified_email ? null : otp
                 })
                 await user.save()
             }

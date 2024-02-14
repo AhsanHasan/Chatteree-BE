@@ -23,6 +23,11 @@ var userSchema = new mongoose.Schema({
         type: String,
         enum: ['online', 'offline', 'away'],
         default: 'offline'
+    },
+    otp: {
+        type: String,
+        length: 6,
+        required: false
     }
 
 },
