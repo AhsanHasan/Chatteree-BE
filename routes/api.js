@@ -9,6 +9,8 @@ const router = new Router()
 /**
  * Authentication routes
  */
+router.post('/authenticate/google/token', AuthenticationController.verifyGoogleToken)
+router.post('/authenticate/google', AuthenticationController.authenticateWithGoogle)
 router.post('/authenticate', AuthenticationController.authenticateWithEmail)
 router.get('/protected', AuthenticateJWT, TestController.testHello)
 module.exports = router
