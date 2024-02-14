@@ -1,0 +1,16 @@
+{
+    "PORT": 3000,
+    "NODE_ENV": "local",
+    "MONGO_CONNECTION": "",
+    "TOKEN_SECRET": "123456789",
+    "BASE_URL": "http://localhost:3000",
+    "APP_URL": "http://localhost:3000",
+    "FRONTEND_URL": "http://localhost:4200",
+    "SSH_TUNNEL": {
+        "username": "",
+        "host": "",
+        "port": 22,
+        "password": "",
+        "dstPort": 27017
+    }
+}
