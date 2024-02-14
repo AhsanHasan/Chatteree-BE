@@ -2,15 +2,21 @@
 
 const { Router } = require('express')
 const { TestController } = require('./../controllers/TestController')
-const { AuthenticationController } = require('./../controllers/AuthenticationController')
 const { AuthenticateJWT } = require('../middleware/AuthenticateJWT')
+const authentication = require('./authentication')
+const user = require('./user')
 const router = new Router()
 
 /**
- * Authentication routes
+ * Authentication Endpoints
  */
-router.post('/authenticate/google/token', AuthenticationController.verifyGoogleToken)
-router.post('/authenticate/google', AuthenticationController.authenticateWithGoogle)
-router.post('/authenticate', AuthenticationController.authenticateWithEmail)
+router.use('/authenticate', authentication)
+
+/**
+ * User Endpoints
+ */
+router.use('/user', user)
+
+
 router.get('/protected', AuthenticateJWT, TestController.testHello)
 module.exports = router
