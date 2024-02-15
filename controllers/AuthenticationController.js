@@ -177,5 +177,36 @@ class AuthenticationController {
             ErrorHandler.sendError(res, error)
         }
     }
+
+    /**
+     * API | POST | /api/authenticate/email/resend-otp
+     * @param {*} req 
+     * @param {*} res 
+     * @returns 
+     */
+    static async resendOtp(req, res) {
+        try {
+            const session = await mongoose.startSession();
+            session.startTransaction();
+            let userId = req.body.userId
+            // Check if the email exists
+            let user = await User.findOne({ _id: userId }).session(session);
+            if (!user) {
+                return new Response(res, null, 'User not found', false)
+            }
+            // Create 6 digit OTP and send it to the user
+            let otp = Math.floor(100000 + Math.random() * 900000);
+            user.otp = otp
+            await user.save({ session });
+            // Send the OTP to the user
+            let html = await PromiseEjs.renderFile('./emails/resendVerifyEmail.ejs', { otp });
+            mailSender.sendMail(user.email, 'Chatteree | Welcome', html);
+            await session.commitTransaction();
+            return new Response(res, null, 'OTP sent successfully.', true)
+
+        } catch (error) {
+            ErrorHandler.sendError(res, error)
+        }
+    }
 }
 module.exports = { AuthenticationController }
