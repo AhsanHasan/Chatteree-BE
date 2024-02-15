@@ -4,6 +4,8 @@ const { User } = require('../schema/user')
 const { AuthMiddleware } = require('./../middleware/AuthMiddleware')
 const { mongoose } = require('../schema/mongoose')
 const { OAuth2Client } = require('google-auth-library')
+const { mailSender } = require('./../utils/MailSender')
+const { PromiseEjs } = require('../utils/PromiseEjs')
 const config = require('./../config.json')
 class AuthenticationController {
     /**
@@ -35,7 +37,7 @@ class AuthenticationController {
                     otp
                 });
                 let html = await PromiseEjs.renderFile('./emails/verifyEmail.ejs', { otp });
-                mailSender.sendMail('syed.khan7007@gmail.com', 'Chatteree | Welcome', html);
+                mailSender.sendMail(email, 'Chatteree | Welcome', html);
                 await user.save({ session });
                 requestType = 'register';
             }
@@ -43,10 +45,10 @@ class AuthenticationController {
             if (user.isActive) {
                 let token = AuthMiddleware.createJWT(user);
                 await session.commitTransaction();
-                return new Response(res, null, { token: `Bearer ${token}`, user, requestType }, true);
+                return new Response(res, { token: `Bearer ${token}`, user, requestType }, 'User authenticated successfully', true);
             }
             await session.commitTransaction();
-            return new Response(res, null, { user, requestType }, true);
+            return new Response(res, { user, requestType }, 'User registered successfully.' , true);
         } catch (error) {
             await session.abortTransaction();
             ErrorHandler.sendError(res, error);
@@ -108,7 +110,7 @@ class AuthenticationController {
                 authToken = `Bearer ${AuthMiddleware.createJWT(user)}`
             }
             await session.commitTransaction();
-            return new Response(res, null, { token: authToken, user, requestType }, true)
+            return new Response(res, { token: authToken, user, requestType }, 'User authenticated successfully.', true)
         } catch (error) {
             await session.abortTransaction();
             ErrorHandler.sendError(res, error)
@@ -137,7 +139,7 @@ class AuthenticationController {
             })
             const payload = ticket.getPayload()
             const userid = payload['sub']
-            return new Response(res, null, payload, true)
+            return new Response(res, payload, 'Google token verified.' , true)
         } catch (error) {
             ErrorHandler.sendError(res, error)
         }
@@ -160,17 +162,17 @@ class AuthenticationController {
             let email = req.body.email
             let user = await User.findOne({ email: email })
             if (!user) {
-                return new Response(res, 'User not found', null, false)
+                return new Response(res, null, 'User not found', false)
             }
             if (user.otp !== otp) {
-                return new Response(res, 'Invalid OTP', null, false)
+                return new Response(res, null, 'Invalid OTP', false)
             }
             user.otp = null
             user.isActive = true
             await user.save()
             // Create a token
             let token = AuthMiddleware.createJWT(user)
-            return new Response(res, null, { token: `Bearer ${token}`, user, requestType }, true)
+            return new Response(res, { token: `Bearer ${token}`, user, requestType }, 'Email verified successfully.', true)
         } catch (error) {
             ErrorHandler.sendError(res, error)
         }
