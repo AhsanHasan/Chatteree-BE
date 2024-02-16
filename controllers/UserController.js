@@ -37,24 +37,27 @@ class UserController {
      * @param {*} res 
      * @returns 
      */
-    static async updateUserProfilePicture(req, res) {
+    static async updateUserBasicInformation(req, res) {
         const session = await mongoose.startSession();
         session.startTransaction();
         try {
-            let userId = req.body.userId;
+            let userId = req.body._id;
             let profilePicture = req.body.profilePicture;
+            let name = req.body.name;
             let user = await User.findOne({ _id: userId }).session(session);
             if (!user) {
-                throw new Error('User not found');
+                throw new Error('User not found')
             }
-            user.profilePicture = profilePicture;
+            user.profilePicture = profilePicture
+            user.name = name
+            user.onlineStatus = 'online'
             await user.save({ session });
             await session.commitTransaction();
-            return new Response(res, null, user, true);
+            return new Response(res, user, 'Information updated successfully.', true);
         } catch (error) {
             await session.abortTransaction();
             if (error.message === 'User not found') {
-                return new Response(res, 'User not found', null, false);
+                return new Response(res, null, 'User not found.', false);
             } else {
                 ErrorHandler.sendError(res, error);
             }

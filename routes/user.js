@@ -8,7 +8,7 @@ const router = new Router()
 router.get('/', AuthenticateJWT, UserController.getUser)
 router.post('/username', AuthenticateJWT, UserController.saveUsername)
 router.put('/name', AuthenticateJWT, UserController.updateName)
-router.put('/profile-picture', AuthenticateJWT, UserController.updateUserProfilePicture)
+router.put('/general-information', AuthenticateJWT, UserController.updateUserBasicInformation)
 
 
 module.exports = router
