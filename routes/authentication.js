@@ -4,9 +4,9 @@ const { AuthenticationController } = require('./../controllers/AuthenticationCon
 
 const router = new Router()
 
-router.post('/google/token', AuthenticationController.verifyGoogleToken)
-router.post('/google', AuthenticationController.authenticateWithGoogle)
 router.post('/', AuthenticationController.authenticateWithEmail)
+router.post('/google', AuthenticationController.authenticateWithGoogle)
+router.post('/google/token', AuthenticationController.verifyGoogleToken)
 router.post('/email/verify', AuthenticationController.verifyEmail)
 router.post('/email/resend-otp', AuthenticationController.resendOtp)
 

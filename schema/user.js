@@ -9,6 +9,10 @@ var userSchema = new mongoose.Schema({
         type: String,
         unique: true
     },
+    username: {
+        type: String,
+        unique: true
+    },
     isActive: {
         type: Boolean,
         default: false

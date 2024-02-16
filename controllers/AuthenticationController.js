@@ -157,29 +157,43 @@ class AuthenticationController {
      * @returns 
      */
     static async verifyEmail(req, res) {
+        const session = await mongoose.startSession();
+        session.startTransaction();
         try {
             let otp = req.body.otp
-            let email = req.body.email
-            let user = await User.findOne({ email: email })
+            let userId = req.body.userId
+            let user = await User.findOne({ _id: userId }).session(session);
             if (!user) {
-                return new Response(res, null, 'User not found', false)
+                throw new Error('User not found');
             }
             if (user.otp !== otp) {
-                return new Response(res, null, 'Invalid OTP', false)
+                throw new Error('Invalid OTP');
             }
-            user.otp = null
-            user.isActive = true
-            await user.save()
+            user.isActive = true;
+            user.otp = null;
+            await user.save({ session });
             // Create a token
-            let token = AuthMiddleware.createJWT(user)
-            return new Response(res, { token: `Bearer ${token}`, user, requestType }, 'Email verified successfully.', true)
+            let token = AuthMiddleware.createJWT(user);
+            await session.commitTransaction();
+            return new Response(res, { token: `Bearer ${token}`, user }, 'Email verified successfully.', true);
         } catch (error) {
-            ErrorHandler.sendError(res, error)
+            await session.abortTransaction();
+            if (error.message === 'User not found' || error.message === 'Invalid OTP') {
+                return new Response(res, null, error.message, false);
+            } else {
+                ErrorHandler.sendError(res, error);
+            }
+        } finally {
+            session.endSession();
         }
     }
 
     /**
      * API | POST | /api/authenticate/email/resend-otp
+     * API is used to resend the OTP to the user
+     * @example {
+     * "userId": string
+     * }
      * @param {*} req 
      * @param {*} res 
      * @returns 
@@ -196,7 +210,7 @@ class AuthenticationController {
             }
             // Create 6 digit OTP and send it to the user
             let otp = Math.floor(100000 + Math.random() * 900000);
-            user.otp = otp
+            await User.updateOne({ _id: userId }, { otp }, { session });
             await user.save({ session });
             // Send the OTP to the user
             let html = await PromiseEjs.renderFile('./emails/resendVerifyEmail.ejs', { otp });

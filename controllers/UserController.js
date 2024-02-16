@@ -74,7 +74,7 @@ class UserController {
      * @param {*} res 
      * @returns 
      */
-    static async updateUserName(req, res) {
+    static async updateName(req, res) {
         try {
             const session = await mongoose.startSession()
             session.startTransaction()
@@ -88,6 +88,44 @@ class UserController {
             await user.save({ session });
             await session.commitTransaction();
             return new Response(res, null, user, true);
+        } catch (error) {
+            await session.abortTransaction();
+            ErrorHandler.sendError(res, error)
+        } finally {
+            session.endSession();
+        }
+    }
+
+    /**
+     * API | POST | /api/user/username
+     * API is used to save the username of a user
+     * @example {
+     * "userId": string,
+     * "username": string
+     * }
+     * @param {*} req 
+     * @param {*} res 
+     * @returns 
+     */
+    static async saveUsername(req, res) {
+        try {
+            const session = await mongoose.startSession()
+            session.startTransaction()
+            let userId = req.body.userId
+            let username = req.body.username
+            // Check if username already exists
+            let userExists = await User.findOne({ username: username }).session(session);
+            if (userExists) {
+                return new Response(res, null, 'Username already exist.', false);
+            }
+            let user = await User.findOne({ _id: userId }).session(session);
+            if (!user) {
+                throw new Error('User not found');
+            }
+            user.username = username;
+            await user.save({ session });
+            await session.commitTransaction();
+            return new Response(res, user, null, true);
         } catch (error) {
             await session.abortTransaction();
             ErrorHandler.sendError(res, error)
