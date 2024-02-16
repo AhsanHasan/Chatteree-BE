@@ -10,24 +10,24 @@ const port = process.env.PORT || config.PORT
 
 const app = express()
 app.use(bodyParser.json({
-    verify: (req, res, buf) => {
-        req.rawBody = buf
-    }
+  verify: (req, res, buf) => {
+    req.rawBody = buf
+  }
 }))
 app.use(passport.initialize())
 require('./middleware/passport')
 
-var whitelist = [
-    'http://localhost:4200',
+const whitelist = [
+  'http://localhost:4200'
 ]
-var corsOptionsDelegate = function (req, callback) {
-    var corsOptions
-    if (whitelist.indexOf(req.header('Origin')) !== -1) {
-        corsOptions = { origin: true, credentials: true }
-    } else {
-        corsOptions = { origin: false, credentials: true }
-    }
-    callback(null, corsOptions)
+const corsOptionsDelegate = function (req, callback) {
+  let corsOptions
+  if (whitelist.indexOf(req.header('Origin')) !== -1) {
+    corsOptions = { origin: true, credentials: true }
+  } else {
+    corsOptions = { origin: false, credentials: true }
+  }
+  callback(null, corsOptions)
 }
 app.use(cors(corsOptionsDelegate))
 
@@ -35,8 +35,8 @@ app.use('/api', api)
 app.use('/public', express.static(path.join(__dirname, '/public')))
 
 app.listen(port, () => {
-    mongoose.connect(config.SSH_TUNNEL.dstPort)
-    console.log(`listening on port ${port}`)
+  mongoose.connect(config.SSH_TUNNEL.dstPort)
+  console.log(`listening on port ${port}`)
 }).on('error', () => {
-    console.log('something went wrong')
+  console.log('something went wrong')
 })

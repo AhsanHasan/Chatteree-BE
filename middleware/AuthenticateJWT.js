@@ -1,4 +1,4 @@
-const passport = require('passport');
+const passport = require('passport')
 
 const AuthenticateJWT = (req, res, next) => {
   passport.authenticate('jwt', { session: false }, (error, user, info) => {
@@ -7,11 +7,11 @@ const AuthenticateJWT = (req, res, next) => {
         message: 'You are not authorized to access this resource',
         success: false,
         status: 401
-        });
+      })
     }
-    req.user = user;
-    next();
-  })(req, res, next);
-};
+    req.user = user
+    next()
+  })(req, res, next)
+}
 
-module.exports = { AuthenticateJWT };
+module.exports = { AuthenticateJWT }

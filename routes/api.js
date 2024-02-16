@@ -17,6 +17,5 @@ router.use('/authenticate', authentication)
  */
 router.use('/user', user)
 
-
 router.get('/protected', AuthenticateJWT, TestController.testHello)
 module.exports = router

@@ -10,5 +10,4 @@ router.post('/username', AuthenticateJWT, UserController.saveUsername)
 router.put('/name', AuthenticateJWT, UserController.updateName)
 router.put('/general-information', AuthenticateJWT, UserController.updateUserBasicInformation)
 
-
 module.exports = router
