@@ -108,8 +108,8 @@ class UserController {
      * @returns 
      */
     static async saveUsername(req, res) {
+        const session = await mongoose.startSession()
         try {
-            const session = await mongoose.startSession()
             session.startTransaction()
             let userId = req.body.userId
             let username = req.body.username
