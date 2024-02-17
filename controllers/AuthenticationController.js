@@ -77,8 +77,8 @@ class AuthenticationController {
     try {
       const email = req.body.email
       const name = req.body.name
-      const profilePic = req.body.profilePic
-      const verifiedEmail = req.body.verified_email
+      const profilePic = req.body.profilePicture
+      const verifiedEmail = req.body.verifiedEmail
       const requestType = 'login'
       let authToken = null
 
