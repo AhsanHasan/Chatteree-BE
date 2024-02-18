@@ -8,7 +8,7 @@ const messageSchema = new mongoose.Schema({
   },
   content: {
     type: String,
-    required: true
+    required: false
   },
   type: {
     type: String,
@@ -24,6 +24,6 @@ const messageSchema = new mongoose.Schema({
   timestamps: true
 }
 )
-const Message = mongoose.model('ChatRoom', messageSchema)
+const Message = mongoose.model('Message', messageSchema)
 
 module.exports = { Message }
