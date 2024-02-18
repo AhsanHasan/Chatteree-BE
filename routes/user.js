@@ -6,6 +6,7 @@ const { AuthenticateJWT } = require('../middleware/AuthenticateJWT')
 const router = new Router()
 
 router.get('/', AuthenticateJWT, UserController.getUser)
+router.get('/all', AuthenticateJWT, UserController.getAllActiveUser)
 router.post('/username', AuthenticateJWT, UserController.saveUsername)
 router.put('/name', AuthenticateJWT, UserController.updateName)
 router.put('/general-information', AuthenticateJWT, UserController.updateUserBasicInformation)

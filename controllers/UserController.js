@@ -136,5 +136,50 @@ class UserController {
       session.endSession()
     }
   }
+
+  /**
+   * API | GET | /api/user/all
+   * API is used to get all the users
+   * @param {*} req
+   * @param {*} res
+   * @returns
+   */
+  static async getAllActiveUser (req, res) {
+    try {
+      const page = req.query.page || 1
+      const limit = req.query.limit || 10
+      const skip = (page - 1) * limit
+      const search = req.query.search || ''
+      // Get all users except the current user who is making the request and is active
+      // If the seach query is present then search the user by name or username or email
+      let users = []
+      if (search && search !== '') {
+        users = await User.find({ _id: { $ne: req.user._id }, isActive: true, $or: [{ name: { $regex: search, $options: 'i' } }, { username: { $regex: search, $options: 'i' } }, { email: { $regex: search, $options: 'i' } }] }).skip(skip).limit(limit)
+      } else {
+        users = await User.find({ _id: { $ne: req.user._id }, isActive: true })
+          .skip(skip)
+          .limit(limit)
+      }
+
+      const totalDocuments = await User.countDocuments({ _id: { $ne: req.user._id }, isActive: true })
+      const totalPages = Math.ceil(totalDocuments / limit)
+      const hasNextPage = page < totalPages
+      const hasPreviousPage = page > 1
+      const pagination = {
+        totalDocuments,
+        totalPages,
+        currentPage: page,
+        hasNextPage,
+        hasPreviousPage
+      }
+      users = {
+        users,
+        pagination
+      }
+      return new Response(res, users, null, true)
+    } catch (error) {
+      ErrorHandler.sendError(res, error)
+    }
+  }
 }
 module.exports = { UserController }
