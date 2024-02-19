@@ -52,7 +52,7 @@ class MessageController {
       chatRoom.lastMessage = newMessage._id
       await chatRoom.save()
       // Push the message to the chat room channel
-      const channel = `chat-room-${chatroomId}`
+      const channel = 'chat-room'
       PusherHelper.sendNotification(channel, newMessage)
       return new Response(res, newMessage, 'Message sent', true, 201)
     } catch (error) {
@@ -83,9 +83,18 @@ class MessageController {
         return new Response(res, null, 'Unauthorized', false, 401)
       }
       // Get all the messages of the chat room with pagination
-      const messages = await Message.find({
+      let messages = await Message.find({
         chatroomId
-      }).sort({ createdAt: 1 }).skip((page - 1) * limit).limit(limit).populate('sender')
+      }).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).populate('sender')
+      messages = messages.reverse()
+      // Update the messages as read
+      await Message.updateMany({
+        chatroomId,
+        sender: { $ne: loggedInUser._id }
+      }, {
+        isRead: true
+      })
+
       return new Response(res, messages, 'Messages found', true, 200)
     } catch (error) {
       ErrorHandler.sendError(res, error)

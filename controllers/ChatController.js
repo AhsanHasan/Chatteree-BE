@@ -107,6 +107,20 @@ class ChatController {
           }
         },
         {
+          $lookup: {
+            from: 'users',
+            localField: 'lastMessage.sender',
+            foreignField: '_id',
+            as: 'lastMessage.sender'
+          }
+        },
+        {
+          $unwind: {
+            path: '$lastMessage.sender',
+            preserveNullAndEmptyArrays: true
+          }
+        },
+        {
           $unwind: {
             path: '$participants',
             preserveNullAndEmptyArrays: true
@@ -246,17 +260,31 @@ class ChatController {
         }
       },
       {
+        $unwind: {
+          path: '$lastMessage',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'lastMessage.sender',
+          foreignField: '_id',
+          as: 'lastMessage.sender'
+        }
+      },
+      {
+        $unwind: {
+          path: '$lastMessage.sender',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
         $lookup: {
           from: 'messages',
           localField: '_id',
           foreignField: 'chatroomId',
           as: 'messages'
-        }
-      },
-      {
-        $unwind: {
-          path: '$lastMessage',
-          preserveNullAndEmptyArrays: true
         }
       },
       {
