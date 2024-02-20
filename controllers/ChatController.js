@@ -95,6 +95,32 @@ class ChatController {
         {
           $lookup: {
             from: 'messages',
+            localField: '_id',
+            foreignField: 'chatroomId',
+            as: 'messages'
+          }
+        },
+        {
+          $addFields: {
+            unreadMessages: {
+              $size: {
+                $filter: {
+                  input: '$messages',
+                  as: 'message',
+                  cond: {
+                    $and: [
+                      { $eq: ['$$message.isRead', false] },
+                      { $ne: ['$$message.sender', new mongoose.Types.ObjectId(String(loggedInUser._id))] }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          $lookup: {
+            from: 'messages',
             localField: 'lastMessage',
             foreignField: '_id',
             as: 'lastMessage'
@@ -112,6 +138,38 @@ class ChatController {
             localField: 'lastMessage.sender',
             foreignField: '_id',
             as: 'lastMessage.sender'
+          }
+        },
+        {
+          $lookup: {
+            from: 'favoritechatrooms',
+            let: { chatRoomId: '$_id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$chatRoomId', '$$chatRoomId'] },
+                      { $eq: ['$userId', new mongoose.Types.ObjectId(String(loggedInUser._id))] }
+                    ]
+                  }
+                }
+              }
+            ],
+            as: 'favorite'
+          }
+        },
+        {
+          $unwind: {
+            path: '$lastMessage.sender',
+            preserveNullAndEmptyArrays: true
+
+          }
+        },
+        {
+          $addFields: {
+            // Check if the chat room is favorite or not by checking the length of the favorite array
+            isFavorite: { $gt: [{ $size: '$favorite' }, 0] }
           }
         },
         {
@@ -136,6 +194,12 @@ class ChatController {
         },
         {
           $limit: limit
+        },
+        {
+          $project: {
+            messages: 0,
+            favorite: 0
+          }
         }
       ])
       const totalDocuments = await ChatRoom.countDocuments({
@@ -285,6 +349,25 @@ class ChatController {
           localField: '_id',
           foreignField: 'chatroomId',
           as: 'messages'
+        }
+      },
+      {
+        $lookup: {
+          from: 'favoritechatrooms',
+          let: { chatRoomId: '$_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$chatRoomId', '$$chatRoomId'] },
+                    { $eq: ['$userId', new mongoose.Types.ObjectId(String(loggedInUser._id))] }
+                  ]
+                }
+              }
+            }
+          ],
+          as: 'favorite'
         }
       },
       {
