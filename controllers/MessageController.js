@@ -3,7 +3,7 @@ const { ErrorHandler } = require('../utils/ErrorHandler')
 const { ChatRoom } = require('../schema/chatRoom')
 const { Message } = require('../schema/message')
 const { PusherHelper } = require('../helper/PusherHelper')
-// const { mongoose } = require('../schema/mongoose')
+const { mongoose } = require('../schema/mongoose')
 
 class MessageController {
   /**
@@ -74,13 +74,70 @@ class MessageController {
       const page = parseInt(req.query.page) || 1
       const limit = parseInt(req.query.limit) || 10
       // Validate if the chat room exists
-      const chatRoom = await ChatRoom.findById(chatroomId)
+      // Get the chatroom along with the participants details
+      let chatRoom = await ChatRoom.aggregate([
+        {
+          $match: {
+            _id: new mongoose.Types.ObjectId(String(chatroomId)),
+            participants: { $in: [loggedInUser._id] }
+          }
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'participants',
+            foreignField: '_id',
+            as: 'participants'
+          }
+        },
+        {
+          $project: {
+            participants: {
+              $filter: {
+                input: '$participants',
+                as: 'participant',
+                cond: { $ne: ['$$participant._id', loggedInUser._id] }
+              }
+            }
+          }
+        },
+        {
+          $unwind: '$participants'
+        },
+        {
+          $lookup: {
+            from: 'favoritechatrooms',
+            let: { chatRoomId: '$_id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$chatRoomId', '$$chatRoomId'] },
+                      { $eq: ['$userId', new mongoose.Types.ObjectId(String(loggedInUser._id))] }
+                    ]
+                  }
+                }
+              }
+            ],
+            as: 'favorite'
+          }
+        },
+        {
+          $addFields: {
+            isFavorite: { $gt: [{ $size: '$favorite' }, 0] }
+          }
+        },
+        {
+          $project: {
+            favorite: 0
+          }
+        }
+
+      ])
+      chatRoom = chatRoom[0]
       if (!chatRoom) {
         return new Response(res, null, 'Chat room not found', false, 404)
-      }
-      // Validate if the user is a participant of the chat room
-      if (!chatRoom.participants.includes(loggedInUser._id)) {
-        return new Response(res, null, 'Unauthorized', false, 401)
       }
       // Get all the messages of the chat room with pagination
       let messages = await Message.find({
@@ -94,8 +151,18 @@ class MessageController {
       }, {
         isRead: true
       })
-
-      return new Response(res, messages, 'Messages found', true, 200)
+      const totalDocuments = await Message.countDocuments({ chatroomId })
+      const totalPages = Math.ceil(totalDocuments / limit)
+      const hasNextPage = page < totalPages
+      const hasPreviousPage = page > 1
+      const pagination = {
+        totalDocuments,
+        totalPages,
+        currentPage: page,
+        hasNextPage,
+        hasPreviousPage
+      }
+      return new Response(res, { chatRoom, messages, pagination }, 'Messages found', true, 200)
     } catch (error) {
       ErrorHandler.sendError(res, error)
     }

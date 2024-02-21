@@ -18,7 +18,8 @@ app.use(passport.initialize())
 require('./middleware/passport')
 
 const whitelist = [
-  'http://localhost:4200'
+  'http://localhost:4200',
+  'http://159.89.1.194:4000'
 ]
 const corsOptionsDelegate = function (req, callback) {
   let corsOptions
