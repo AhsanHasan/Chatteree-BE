@@ -371,6 +371,12 @@ class ChatController {
         }
       },
       {
+        $addFields: {
+          // Check if the chat room is favorite or not by checking the length of the favorite array
+          isFavorite: { $gt: [{ $size: '$favorite' }, 0] }
+        }
+      },
+      {
         $project: {
           participants: 1,
           lastMessage: 1,
