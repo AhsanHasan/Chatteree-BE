@@ -95,7 +95,19 @@ class MessageController {
         isRead: true
       })
 
-      return new Response(res, messages, 'Messages found', true, 200)
+      const totalDocuments = await Message.countDocuments({ chatroomId })
+      const totalPages = Math.ceil(totalDocuments / limit)
+      const hasNextPage = page < totalPages
+      const hasPreviousPage = page > 1
+      const pagination = {
+        totalDocuments,
+        totalPages,
+        currentPage: page,
+        hasNextPage,
+        hasPreviousPage
+      }
+
+      return new Response(res, { messages, pagination }, 'Messages found', true, 200)
     } catch (error) {
       ErrorHandler.sendError(res, error)
     }
