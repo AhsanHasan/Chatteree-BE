@@ -404,14 +404,6 @@ class ChatController {
           }
         },
         {
-          $lookup: {
-            from: 'messages',
-            localField: '_id',
-            foreignField: 'chatroomId',
-            as: 'messages'
-          }
-        },
-        {
           $facet: {
             matchUser: [
               {
