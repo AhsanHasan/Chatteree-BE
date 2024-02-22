@@ -331,12 +331,16 @@ class ChatController {
     }
   }
 
+  /**
+   * API | GET | /api/chatroom/search
+   * API is used to search for chat room participants and messages
+   * @param {*} req
+   * @param {*} res
+   */
   static async searchForChatroomParticipantsAndMessages (req, res) {
     try {
       const userId = new mongoose.Types.ObjectId(String(req.user._id))
       const search = req.query.search
-      // const page = parseInt(req.query.page, 10) || 1
-      // const limit = parseInt(req.query.limit, 10) || 10
 
       const chatroom = await ChatRoom.aggregate([
         {
