@@ -331,6 +331,143 @@ class ChatController {
     }
   }
 
+  static async searchForChatroomParticipantsAndMessages (req, res) {
+    try {
+      const userId = new mongoose.Types.ObjectId(String(req.user._id))
+      const search = req.query.search
+      // const page = parseInt(req.query.page, 10) || 1
+      // const limit = parseInt(req.query.limit, 10) || 10
+
+      const chatroom = await ChatRoom.aggregate([
+        {
+          $match: {
+            participants: {
+              $in: [userId]
+            }
+          }
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'participants',
+            foreignField: '_id',
+            as: 'participants'
+          }
+        },
+        {
+          $addFields: {
+            participants: {
+              $filter: {
+                input: '$participants',
+                as: 'participant',
+                cond: { $ne: ['$$participant._id', userId] }
+              }
+            }
+          }
+        },
+        {
+          $unwind: {
+            path: '$participants',
+            preserveNullAndEmptyArrays: true
+          }
+        },
+        {
+          $lookup: {
+            from: 'messages',
+            localField: 'lastMessage',
+            foreignField: '_id',
+            as: 'lastMessage'
+          }
+        },
+        {
+          $unwind: {
+            path: '$lastMessage',
+            preserveNullAndEmptyArrays: true
+          }
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'lastMessage.sender',
+            foreignField: '_id',
+            as: 'lastMessage.sender'
+          }
+        },
+        {
+          $unwind: {
+            path: '$lastMessage.sender',
+            preserveNullAndEmptyArrays: true
+          }
+        },
+        {
+          $lookup: {
+            from: 'messages',
+            localField: '_id',
+            foreignField: 'chatroomId',
+            as: 'messages'
+          }
+        },
+        {
+          $facet: {
+            matchUser: [
+              {
+                $match: {
+                  $or: [
+                    { 'participants.name': { $regex: search, $options: 'i' } },
+                    { 'participants.email': { $regex: search, $options: 'i' } },
+                    { 'participants.username': { $regex: search, $options: 'i' } }
+                  ]
+                }
+              }
+            ],
+            matchMessages: [
+              {
+                $lookup: {
+                  from: 'messages',
+                  localField: '_id',
+                  foreignField: 'chatroomId',
+                  as: 'messages'
+                }
+              },
+              {
+                $unwind: '$messages'
+              },
+              {
+                $match: {
+                  'messages.content': { $regex: search, $options: 'i' }
+                }
+              },
+              {
+                $lookup: {
+                  from: 'users',
+                  localField: 'messages.sender',
+                  foreignField: '_id',
+                  as: 'messages.sender'
+                }
+              },
+              {
+                $unwind: '$messages.sender'
+              },
+              {
+                $project: {
+                  _id: 1,
+                  'messages._id': 1,
+                  'messages.content': 1,
+                  'messages.createdAt': 1,
+                  'messages.sender': 1,
+                  participants: 1
+                }
+              }
+            ]
+          }
+        }
+      ])
+      return new Response(res, chatroom[0], 'Chat room found', true, 200)
+    } catch (error) {
+      ErrorHandler.sendError(res, error)
+    }
+  }
+
   // Pipeline to get the chat rooms
   static getChatRoomPipeline (loggedInUser, chatter) {
     return [
