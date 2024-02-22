@@ -140,10 +140,51 @@ class MessageController {
         return new Response(res, null, 'Chat room not found', false, 404)
       }
       // Get all the messages of the chat room with pagination
-      let messages = await Message.find({
-        chatroomId
-      }).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).populate('sender')
-      messages = messages.reverse()
+      let messages = await Message.aggregate([
+        {
+          $match: {
+            chatroomId: new mongoose.Types.ObjectId(String(chatroomId))
+          }
+        },
+        {
+          $sort: { createdAt: -1 }
+        },
+        {
+          $skip: (page - 1) * limit
+        },
+        {
+          $limit: limit
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'sender',
+            foreignField: '_id',
+            as: 'sender'
+          }
+        },
+        {
+          $unwind: '$sender'
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: { format: '%Y-%m-%d', date: '$createdAt' }
+            },
+            messages: {
+              $push: '$$ROOT'
+            }
+          }
+        },
+        {
+          $sort: { _id: -1 }
+        }
+      ])
+
+      messages = messages.map(group => {
+        group.messages = group.messages.reverse()
+        return group
+      })
       // Update the messages as read
       await Message.updateMany({
         chatroomId,

@@ -65,6 +65,7 @@ class ChatController {
       const loggedInUser = req.user
       const page = parseInt(req.query.page, 10) || 1
       const limit = parseInt(req.query.limit, 10) || 10
+      const search = req.query.search || ''
       const chatRooms = await ChatRoom.aggregate([
         {
           $match: {
@@ -79,6 +80,15 @@ class ChatController {
             localField: 'participants',
             foreignField: '_id',
             as: 'participants'
+          }
+        },
+        {
+          $match: {
+            $or: [
+              { 'participants.name': { $regex: search, $options: 'i' } },
+              { 'participants.email': { $regex: search, $options: 'i' } },
+              { 'participants.username': { $regex: search, $options: 'i' } }
+            ]
           }
         },
         {
@@ -202,11 +212,36 @@ class ChatController {
           }
         }
       ])
-      const totalDocuments = await ChatRoom.countDocuments({
-        participants: {
-          $in: [new mongoose.Types.ObjectId(String(loggedInUser._id))]
+      let totalDocuments = await ChatRoom.aggregate([
+        {
+          $match: {
+            participants: {
+              $in: [new mongoose.Types.ObjectId(String(loggedInUser._id))]
+            }
+          }
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'participants',
+            foreignField: '_id',
+            as: 'participants'
+          }
+        },
+        {
+          $match: {
+            $or: [
+              { 'participants.name': { $regex: search, $options: 'i' } },
+              { 'participants.email': { $regex: search, $options: 'i' } },
+              { 'participants.username': { $regex: search, $options: 'i' } }
+            ]
+          }
+        },
+        {
+          $count: 'total'
         }
-      })
+      ])
+      totalDocuments = totalDocuments[0] ? totalDocuments[0].total : 0
       const totalPages = Math.ceil(totalDocuments / limit)
       const hasNextPage = page < totalPages
       const hasPreviousPage = page > 1
