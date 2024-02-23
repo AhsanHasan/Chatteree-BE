@@ -553,6 +553,24 @@ class ChatController {
       }
     ]
   }
+
+  static async deleteChatRoom (req, res) {
+    try {
+      const chatRoomId = req.params.id
+      const loggedInUser = req.user
+      const chatRoom = await ChatRoom.findById(chatRoomId)
+      if (!chatRoom) {
+        return new Response(res, null, 'Chat room not found', false, 404)
+      }
+      if (!chatRoom.participants.includes(loggedInUser._id)) {
+        return new Response(res, null, 'You are not a participant of this chat room', false, 400)
+      }
+      await ChatRoom.findOneAndDelete({ _id: chatRoomId })
+      return new Response(res, null, 'Chat room deleted', true, 200)
+    } catch (error) {
+      ErrorHandler.sendError(res, error)
+    }
+  }
 }
 
 module.exports = { ChatController }
