@@ -65,6 +65,7 @@ class ChatController {
       const loggedInUser = req.user
       const page = parseInt(req.query.page, 10) || 1
       const limit = parseInt(req.query.limit, 10) || 10
+      const search = req.query.search || ''
       const chatRooms = await ChatRoom.aggregate([
         {
           $match: {
@@ -79,6 +80,15 @@ class ChatController {
             localField: 'participants',
             foreignField: '_id',
             as: 'participants'
+          }
+        },
+        {
+          $match: {
+            $or: [
+              { 'participants.name': { $regex: search, $options: 'i' } },
+              { 'participants.email': { $regex: search, $options: 'i' } },
+              { 'participants.username': { $regex: search, $options: 'i' } }
+            ]
           }
         },
         {
@@ -202,11 +212,36 @@ class ChatController {
           }
         }
       ])
-      const totalDocuments = await ChatRoom.countDocuments({
-        participants: {
-          $in: [new mongoose.Types.ObjectId(String(loggedInUser._id))]
+      let totalDocuments = await ChatRoom.aggregate([
+        {
+          $match: {
+            participants: {
+              $in: [new mongoose.Types.ObjectId(String(loggedInUser._id))]
+            }
+          }
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'participants',
+            foreignField: '_id',
+            as: 'participants'
+          }
+        },
+        {
+          $match: {
+            $or: [
+              { 'participants.name': { $regex: search, $options: 'i' } },
+              { 'participants.email': { $regex: search, $options: 'i' } },
+              { 'participants.username': { $regex: search, $options: 'i' } }
+            ]
+          }
+        },
+        {
+          $count: 'total'
         }
-      })
+      ])
+      totalDocuments = totalDocuments[0] ? totalDocuments[0].total : 0
       const totalPages = Math.ceil(totalDocuments / limit)
       const hasNextPage = page < totalPages
       const hasPreviousPage = page > 1
@@ -291,6 +326,139 @@ class ChatController {
         }
       ])
       return new Response(res, chatRoom, 'Chat room found', true, 200)
+    } catch (error) {
+      ErrorHandler.sendError(res, error)
+    }
+  }
+
+  /**
+   * API | GET | /api/chatroom/search
+   * API is used to search for chat room participants and messages
+   * @param {*} req
+   * @param {*} res
+   */
+  static async searchForChatroomParticipantsAndMessages (req, res) {
+    try {
+      const userId = new mongoose.Types.ObjectId(String(req.user._id))
+      const search = req.query.search
+
+      const chatroom = await ChatRoom.aggregate([
+        {
+          $match: {
+            participants: {
+              $in: [userId]
+            }
+          }
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'participants',
+            foreignField: '_id',
+            as: 'participants'
+          }
+        },
+        {
+          $addFields: {
+            participants: {
+              $filter: {
+                input: '$participants',
+                as: 'participant',
+                cond: { $ne: ['$$participant._id', userId] }
+              }
+            }
+          }
+        },
+        {
+          $unwind: {
+            path: '$participants',
+            preserveNullAndEmptyArrays: true
+          }
+        },
+        {
+          $lookup: {
+            from: 'messages',
+            localField: 'lastMessage',
+            foreignField: '_id',
+            as: 'lastMessage'
+          }
+        },
+        {
+          $unwind: {
+            path: '$lastMessage',
+            preserveNullAndEmptyArrays: true
+          }
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'lastMessage.sender',
+            foreignField: '_id',
+            as: 'lastMessage.sender'
+          }
+        },
+        {
+          $unwind: {
+            path: '$lastMessage.sender',
+            preserveNullAndEmptyArrays: true
+          }
+        },
+        {
+          $facet: {
+            matchUser: [
+              {
+                $match: {
+                  $or: [
+                    { 'participants.name': { $regex: search, $options: 'i' } },
+                    { 'participants.email': { $regex: search, $options: 'i' } },
+                    { 'participants.username': { $regex: search, $options: 'i' } }
+                  ]
+                }
+              }
+            ],
+            matchMessages: [
+              {
+                $lookup: {
+                  from: 'messages',
+                  localField: '_id',
+                  foreignField: 'chatroomId',
+                  as: 'messages'
+                }
+              },
+              {
+                $unwind: '$messages'
+              },
+              {
+                $match: {
+                  'messages.content': { $regex: search, $options: 'i' }
+                }
+              },
+              {
+                $lookup: {
+                  from: 'users',
+                  localField: 'messages.sender',
+                  foreignField: '_id',
+                  as: 'messages.sender'
+                }
+              },
+              {
+                $unwind: '$messages.sender'
+              },
+              {
+                $project: {
+                  _id: 1,
+                  'messages._id': 1,
+                  'messages.content': 1,
+                  'messages.createdAt': 1,
+                  'messages.sender': 1,
+                  participants: 1
+                }
+              }
+            ]
+          }
+        }
+      ])
+      return new Response(res, chatroom[0], 'Chat room found', true, 200)
     } catch (error) {
       ErrorHandler.sendError(res, error)
     }
@@ -384,6 +552,24 @@ class ChatController {
         }
       }
     ]
+  }
+
+  static async deleteChatRoom (req, res) {
+    try {
+      const chatRoomId = req.params.id
+      const loggedInUser = req.user
+      const chatRoom = await ChatRoom.findById(chatRoomId)
+      if (!chatRoom) {
+        return new Response(res, null, 'Chat room not found', false, 404)
+      }
+      if (!chatRoom.participants.includes(loggedInUser._id)) {
+        return new Response(res, null, 'You are not a participant of this chat room', false, 400)
+      }
+      await ChatRoom.findOneAndDelete({ _id: chatRoomId })
+      return new Response(res, null, 'Chat room deleted', true, 200)
+    } catch (error) {
+      ErrorHandler.sendError(res, error)
+    }
   }
 }
 

@@ -8,5 +8,7 @@ const router = new Router()
 router.get('/', AuthenticateJWT, ChatController.getChatRoom)
 router.get('/id', AuthenticateJWT, ChatController.getChatRoomById)
 router.get('/all', AuthenticateJWT, ChatController.getChatRooms)
+router.get('/search', AuthenticateJWT, ChatController.searchForChatroomParticipantsAndMessages)
+router.delete('/', AuthenticateJWT, ChatController.deleteChatRoom)
 
 module.exports = router
