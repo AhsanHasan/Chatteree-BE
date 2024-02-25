@@ -2,7 +2,6 @@
 
 const { Router } = require('express')
 const { TestController } = require('./../controllers/TestController')
-const { AuthenticateJWT } = require('../middleware/AuthenticateJWT')
 const authentication = require('./authentication')
 const user = require('./user')
 const chatroom = require('./chatroom')
@@ -41,5 +40,5 @@ router.use('/favorite-chatroom', favoriteChatRoom)
  */
 router.use('/status', status)
 
-router.get('/protected', AuthenticateJWT, TestController.testHello)
+router.get('/protected', TestController.testHello)
 module.exports = router
