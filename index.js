@@ -30,7 +30,9 @@ const corsOptionsDelegate = function (req, callback) {
   }
   callback(null, corsOptions)
 }
+
 app.use(cors(corsOptionsDelegate))
+app.set('trust proxy', true)
 
 app.use('/api', api)
 app.use('/public', express.static(path.join(__dirname, '/public')))
