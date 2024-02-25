@@ -181,5 +181,15 @@ class UserController {
       ErrorHandler.sendError(res, error)
     }
   }
+
+  static async updateOnlineStatus (req, res) {
+    try {
+      const userId = req.user._id
+      const user = await User.findOneAndUpdate({ _id: userId }, { onlineStatus: 'offline' }, { new: true })
+      return new Response(res, null, user, true)
+    } catch (error) {
+      ErrorHandler.sendError(res, error)
+    }
+  }
 }
 module.exports = { UserController }

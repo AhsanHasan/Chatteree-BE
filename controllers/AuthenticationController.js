@@ -226,15 +226,5 @@ class AuthenticationController {
       ErrorHandler.sendError(res, error)
     }
   }
-
-  static async logout (req, res) {
-    try {
-      const user = req.user
-      await User.updateOne({ _id: user._id }, { onlineStatus: 'offline' })
-      return new Response(res, null, 'User logged out successfully.', true)
-    } catch (error) {
-      ErrorHandler.sendError(res, error)
-    }
-  }
 }
 module.exports = { AuthenticationController }
