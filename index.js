@@ -17,25 +17,25 @@ app.use(bodyParser.json({
 app.use(passport.initialize())
 require('./middleware/passport')
 
-const whitelist = [
-  'http://localhost:4200',
-  'http://159.89.1.194:4000'
-]
-const corsOptionsDelegate = function (req, callback) {
-  let corsOptions
-  if (whitelist.indexOf(req.header('Origin')) !== -1) {
-    corsOptions = { origin: true, credentials: true }
-  } else {
-    corsOptions = { origin: false, credentials: true }
-  }
-  callback(null, corsOptions)
-}
-
-// const allOrigins = function (req, callback) {
-//   callback(null, { origin: true, credentials: true })
+// const whitelist = [
+//   'http://localhost:4200',
+//   'http://159.89.1.194:4000'
+// ]
+// const corsOptionsDelegate = function (req, callback) {
+//   let corsOptions
+//   if (whitelist.indexOf(req.header('Origin')) !== -1) {
+//     corsOptions = { origin: true, credentials: true }
+//   } else {
+//     corsOptions = { origin: false, credentials: true }
+//   }
+//   callback(null, corsOptions)
 // }
 
-app.use('/api', cors(corsOptionsDelegate), api)
+const allOrigins = function (req, callback) {
+  callback(null, { origin: true, credentials: true })
+}
+
+app.use('/api', cors(allOrigins), api)
 app.set('trust proxy', true)
 
 app.use('/api', api)
