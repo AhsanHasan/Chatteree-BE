@@ -31,7 +31,11 @@ const corsOptionsDelegate = function (req, callback) {
   callback(null, corsOptions)
 }
 
-app.use(cors(corsOptionsDelegate))
+// const allOrigins = function (req, callback) {
+//   callback(null, { origin: true, credentials: true })
+// }
+
+app.use('/api', cors(corsOptionsDelegate), api)
 app.set('trust proxy', true)
 
 app.use('/api', api)
