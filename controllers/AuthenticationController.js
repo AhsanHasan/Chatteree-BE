@@ -230,8 +230,7 @@ class AuthenticationController {
   static async logout (req, res) {
     try {
       const user = req.user
-      user.onlineStatus = 'offline'
-      await user.save()
+      await User.updateOne({ _id: user._id }, { onlineStatus: 'offline' })
       return new Response(res, null, 'User logged out successfully.', true)
     } catch (error) {
       ErrorHandler.sendError(res, error)
