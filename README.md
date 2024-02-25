@@ -57,7 +57,7 @@ Configure your settings by creating the `config.json` file:
 
 ## Features
 
-1. **User Authentication:**
+ **User Authentication:**
    - Sign in using email credentials or Google account.
    - Email verification through OTP for enhanced security.
 
