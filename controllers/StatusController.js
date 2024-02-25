@@ -3,6 +3,7 @@ const { ErrorHandler } = require('../utils/ErrorHandler')
 const { Status } = require('../schema/status')
 const { ChatRoom } = require('../schema/chatRoom')
 const { mongoose } = require('../schema/mongoose')
+const { PusherHelper } = require('../helper/PusherHelper')
 class StatusController {
   /**
      * API | POST | /api/status
@@ -22,6 +23,8 @@ class StatusController {
       const url = req.body.url
       const newStatus = new Status({ userId, type, url })
       await newStatus.save()
+      const channel = 'chat-room'
+      PusherHelper.sendNotification(channel, newStatus, 'new-status')
       return new Response(res, newStatus, 'Status created', true, 201)
     } catch (error) {
       ErrorHandler.sendError(res, error)
