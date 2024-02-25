@@ -38,8 +38,6 @@
     "pusher": "^5.2.0",
     "request": "^2.88.2",
     "request-promise": "^4.2.6",
-    "shell-exec": "^1.1.2",
-    "tunnel-ssh": "^4.1.4",
     "uuid": "^9.0.1"
   },
   "devDependencies": {

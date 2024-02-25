@@ -34,7 +34,8 @@ class AuthenticationController {
         // Register the user and return the token
         user = new User({
           email,
-          otp
+          otp,
+          onlineStatus: 'online'
         })
         const html = await PromiseEjs.renderFile('./emails/verifyEmail.ejs', { otp })
         mailSender.sendMail(email, 'Chatteree | Welcome', html)
@@ -221,6 +222,17 @@ class AuthenticationController {
       mailSender.sendMail(user.email, 'Chatteree | Welcome', html)
       await session.commitTransaction()
       return new Response(res, null, 'OTP sent successfully.', true)
+    } catch (error) {
+      ErrorHandler.sendError(res, error)
+    }
+  }
+
+  static async logout (req, res) {
+    try {
+      const user = req.user
+      user.onlineStatus = 'offline'
+      await user.save()
+      return new Response(res, null, 'User logged out successfully.', true)
     } catch (error) {
       ErrorHandler.sendError(res, error)
     }

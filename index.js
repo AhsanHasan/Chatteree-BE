@@ -38,6 +38,6 @@ app.use('/public', express.static(path.join(__dirname, '/public')))
 app.listen(port, () => {
   mongoose.connect(config.SSH_TUNNEL.dstPort)
   console.log(`listening on port ${port}`)
-}).on('error', () => {
-  console.log('something went wrong')
+}).on('error', (error) => {
+  console.error('Something went wrong:', error)
 })

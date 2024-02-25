@@ -4,6 +4,7 @@ const { User } = require('../schema/user')
 const { ChatRoom } = require('../schema/chatRoom')
 const { mongoose } = require('../schema/mongoose')
 const { Message } = require('../schema/message')
+const { FavoriteChatRoom } = require('../schema/favorite-chatroom')
 
 class ChatController {
   /**
@@ -556,15 +557,19 @@ class ChatController {
 
   static async deleteChatRoom (req, res) {
     try {
-      const chatRoomId = req.params.id
+      const chatRoomId = req.query.chatroomId
       const loggedInUser = req.user
-      const chatRoom = await ChatRoom.findById(chatRoomId)
+      const chatRoom = await ChatRoom.findById(new mongoose.Types.ObjectId(String(chatRoomId)))
       if (!chatRoom) {
         return new Response(res, null, 'Chat room not found', false, 404)
       }
       if (!chatRoom.participants.includes(loggedInUser._id)) {
         return new Response(res, null, 'You are not a participant of this chat room', false, 400)
       }
+      // Delete messages of the chat room
+      await Message.deleteMany({ chatroomId: chatRoomId })
+      // Delete the chat room from favorite chat room collection for logged in user
+      await FavoriteChatRoom.findOneAndDelete({ chatRoomId, userId: loggedInUser._id })
       await ChatRoom.findOneAndDelete({ _id: chatRoomId })
       return new Response(res, null, 'Chat room deleted', true, 200)
     } catch (error) {
