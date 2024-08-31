@@ -6,6 +6,7 @@ const { mongoose } = require('../schema/mongoose')
 const { OAuth2Client } = require('google-auth-library')
 const { mailSender } = require('./../utils/MailSender')
 const { PromiseEjs } = require('../utils/PromiseEjs')
+const { PusherHelper } = require('../helper/PusherHelper')
 const config = require('./../config.json')
 class AuthenticationController {
   /**
@@ -45,6 +46,12 @@ class AuthenticationController {
       // Create a token if the user is verified
       if (user.isActive) {
         const token = AuthMiddleware.createJWT(user)
+        await User.findOneAndUpdate({ email }, { $set: { onlineStatus: 'online', lastLogin: new Date() } }).session(session)
+        // Send a pusher event to notify the users that the user is online
+        const eventName = 'online-status'
+        const channel = 'chat-room'
+        user.onlineStatus = 'online'
+        PusherHelper.sendNotification(channel, user, eventName)
         await session.commitTransaction()
         return new Response(res, { token: `Bearer ${token}`, user, requestType }, 'User authenticated successfully', true)
       }

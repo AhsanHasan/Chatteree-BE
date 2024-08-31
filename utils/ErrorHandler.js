@@ -1,18 +1,22 @@
 'use strict'
+
 const { Response } = require('./Response')
 
 class ErrorHandler {
   static sendError (res, error) {
     try {
       console.log(error)
-      return new Response(res, error, JSON.stringify(error), false, error.code)
+      if (error.code <= 500 && error.code >= 300) {
+        return new Response(res, false, error, JSON.stringify(error), 400)
+      } else if (typeof error === 'string') {
+        return new Response(res, false, error, JSON.stringify(error), 500)
+      } else {
+        // If the error is not a string, then it is an Error object
+        return new Response(res, false, error.stack, error.toString(), 500)
+      }
     } catch (error) {
-      return new Response(res, { success: false }, 'Something went wrong', false, 500)
+      return new Response(res, false, { success: false }, 'Something went wrong', 500)
     }
-  }
-
-  static showError (error) {
-    console.log(error)
   }
 }
 

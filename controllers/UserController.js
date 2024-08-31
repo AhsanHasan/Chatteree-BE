@@ -3,6 +3,7 @@ const { ErrorHandler } = require('../utils/ErrorHandler')
 const { User } = require('../schema/user')
 const { AuthMiddleware } = require('./../middleware/AuthMiddleware')
 const { mongoose } = require('../schema/mongoose')
+const { PusherHelper } = require('../helper/PusherHelper')
 
 class UserController {
   /**
@@ -186,6 +187,10 @@ class UserController {
     try {
       const userId = req.user._id
       const user = await User.findOneAndUpdate({ _id: userId }, { onlineStatus: 'offline' }, { new: true })
+      const event = 'online-status'
+      const channel = 'chat-room'
+      user.onlineStatus = 'offline'
+      PusherHelper.sendNotification(channel, user, event)
       return new Response(res, null, user, true)
     } catch (error) {
       ErrorHandler.sendError(res, error)
